@@ -27,6 +27,8 @@ interface CapturedMedia {
 
 export default function VehicleCaptureScreen() {
   const navigate = useNavigate();
+  const role = sessionStorage.getItem('userRole') || 'policyholder';
+  const activeClaimId = sessionStorage.getItem('activeClaimId');
   const claimLine = sessionStorage.getItem('claimLine') || 'motor';
   const [capturedMedia, setCapturedMedia] = useState<CapturedMedia[]>([]);
   const [currentMedia, setCurrentMedia] = useState<CapturedMedia | null>(null);
@@ -43,6 +45,12 @@ export default function VehicleCaptureScreen() {
 
   // Load existing captured media from sessionStorage when component mounts
   useEffect(() => {
+    if (role === 'field-agent' && !activeClaimId) {
+      setFeedback('No assigned claim found. Open an assigned claim before starting onsite assessment.');
+      navigate('/reports-history');
+      return;
+    }
+
     const storedData = sessionStorage.getItem('vehicleCaptureData');
     if (storedData) {
       try {
@@ -54,7 +62,7 @@ export default function VehicleCaptureScreen() {
         console.error('Error loading captured media:', error);
       }
     }
-  }, []);
+  }, [activeClaimId, navigate, role]);
 
   const handlePhotoCapture = () => {
     fileInputRef.current?.click();

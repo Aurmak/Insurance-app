@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router';
-import { Box, Card, CardContent, Chip, Container, IconButton, Typography } from '@mui/material';
+import { Alert, Box, Button, Card, CardContent, Chip, Container, IconButton, Typography } from '@mui/material';
 import { AlertTriangle, ArrowLeft, Car, ShieldAlert, UserRoundX } from 'lucide-react';
 
 const CLAIM_LINES = [
@@ -102,11 +102,20 @@ const CLAIM_TYPES_BY_LINE = {
 export default function InspectionTypeScreen() {
   const navigate = useNavigate();
   const role = sessionStorage.getItem('userRole') || 'policyholder';
+  const activeClaimId = sessionStorage.getItem('activeClaimId');
   const [selectedLine, setSelectedLine] = useState(sessionStorage.getItem('claimLine') || 'motor');
 
   const handleSelect = (claimType: string) => {
+    if (role === 'field-agent' && !activeClaimId) {
+      navigate('/reports-history');
+      return;
+    }
     sessionStorage.setItem('inspectionType', claimType);
-    sessionStorage.removeItem('assessmentMode');
+    if (role === 'field-agent') {
+      sessionStorage.setItem('assessmentMode', 'agent');
+    } else {
+      sessionStorage.removeItem('assessmentMode');
+    }
     navigate('/vehicle-capture');
   };
 
@@ -130,6 +139,17 @@ export default function InspectionTypeScreen() {
       </Box>
 
       <Container sx={{ py: 3 }}>
+        {role === 'field-agent' && !activeClaimId && (
+          <Box sx={{ mb: 2.5 }}>
+            <Alert severity="info" sx={{ mb: 1.5 }}>
+              Field agents can only submit assessments for assigned claims from back-office dispatch.
+            </Alert>
+            <Button fullWidth variant="contained" onClick={() => navigate('/reports-history')}>
+              Open Assigned Claims
+            </Button>
+          </Box>
+        )}
+
         <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1 }}>
           Insurance Line
         </Typography>
@@ -159,7 +179,8 @@ export default function InspectionTypeScreen() {
                 key={type.id}
                 onClick={() => handleSelect(type.id)}
                 sx={{
-                  cursor: 'pointer',
+                  cursor: role === 'field-agent' && !activeClaimId ? 'not-allowed' : 'pointer',
+                  opacity: role === 'field-agent' && !activeClaimId ? 0.55 : 1,
                   borderRadius: 3,
                   border: '1px solid #E5E7EB',
                   '&:active': { transform: 'scale(0.985)' },

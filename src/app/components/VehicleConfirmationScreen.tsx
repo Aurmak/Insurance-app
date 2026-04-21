@@ -72,6 +72,7 @@ interface PakistanVehicleData {
 
 export default function VehicleConfirmationScreen() {
   const navigate = useNavigate();
+  const role = sessionStorage.getItem('userRole') || 'policyholder';
   const claimLine = sessionStorage.getItem('claimLine') || 'motor';
   const isMotorClaim = claimLine === 'motor';
   const [activeClaimId, setActiveClaimId] = useState<string | null>(null);
@@ -99,6 +100,10 @@ export default function VehicleConfirmationScreen() {
     if (existing) {
       setActiveClaimId(existing);
       return existing;
+    }
+
+    if (role === 'field-agent') {
+      return null;
     }
 
     const created = createDraftClaim({
@@ -129,13 +134,19 @@ export default function VehicleConfirmationScreen() {
       if (existingClaimId) {
         setActiveClaimId(existingClaimId);
       }
+
+      if (role === 'field-agent' && !existingClaimId) {
+        setFeedback('Assigned claim not found. Start assessment from an assigned claim card.');
+        navigate('/reports-history');
+        return;
+      }
       
       // Do NOT automatically run vehicle checks - user must trigger it manually
     } else {
       // No data, go back
       navigate('/inspection-type');
     }
-  }, [navigate]);
+  }, [navigate, role]);
 
   const handleBack = () => {
     // Don't remove vehicleCaptureData - allow user to go back and add more photos
@@ -152,6 +163,10 @@ export default function VehicleConfirmationScreen() {
     }
 
     const claimId = ensureActiveClaim();
+    if (!claimId) {
+      setFeedback('Assigned claim is required for field assessment.');
+      return;
+    }
     setIsVerifyingWithAPI(true);
     setIsRunningChecks(true);
 
@@ -220,6 +235,10 @@ export default function VehicleConfirmationScreen() {
     }
 
     const claimId = ensureActiveClaim();
+    if (!claimId) {
+      setFeedback('Field agent assessments must be attached to an assigned claim.');
+      return;
+    }
     const existingClaim = getClaimById(claimId);
     if (existingClaim && !existingClaim.erp?.externalClaimId) {
       const erpClaim = await createErpClaim({
