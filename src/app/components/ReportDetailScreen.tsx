@@ -144,11 +144,11 @@ export default function ReportDetailScreen() {
               startIcon={<Send size={18} />}
               onClick={() => {
                 if (report.claimId) sessionStorage.setItem('activeClaimId', report.claimId);
-                sessionStorage.setItem('assessmentMode', 'agent');
+                sessionStorage.setItem('assessmentMode', claim?.state === 'INFO_REQUESTED' ? 'agent-context' : 'agent');
                 navigate('/vehicle-capture');
               }}
             >
-              Add Field Assessment
+              {claim?.state === 'INFO_REQUESTED' ? 'Add Requested Context' : 'Add Field Assessment'}
             </Button>
           )}
           <Button variant="outlined" startIcon={<FileDown size={18} />} onClick={handleExport}>

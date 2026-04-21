@@ -25,7 +25,7 @@ export default function LoginScreen() {
     sessionStorage.setItem('userRole', role);
     sessionStorage.setItem('userEmail', email || 'demo@insurer.pk');
     sessionStorage.setItem('insurerId', 'insurer-demo');
-    sessionStorage.setItem('userId', `demo-${role}`);
+    sessionStorage.setItem('userId', role === 'field-agent' ? 'agent-pk-001' : `demo-${role}`);
     navigate('/dashboard');
   };
 

@@ -11,6 +11,8 @@ import { getClaimById, transitionClaimState } from '../domain/claims/service';
 export default function InspectionReportScreen() {
   const navigate = useNavigate();
   const role = sessionStorage.getItem('userRole') || 'policyholder';
+  const userId = sessionStorage.getItem('userId') || 'policyholder-demo';
+  const assessmentMode = sessionStorage.getItem('assessmentMode') || 'standard';
   const [observations, setObservations] = useState<any[]>([]);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [feedback, setFeedback] = useState<{ message: string; severity: 'info' | 'success' | 'error' }>({
@@ -61,6 +63,9 @@ export default function InspectionReportScreen() {
       claimLine,
       inspectionType: claimType,
       date: claimDate.toISOString(),
+      submittedByUserId: userId,
+      submittedByRole: role,
+      submissionMode: assessmentMode,
       observations,
       observationsCount: observations.length,
       selectedObservationsForPlatform: Array.from(selected),
@@ -90,10 +95,20 @@ export default function InspectionReportScreen() {
       return;
     }
 
-    advance('INVESTIGATION_IN_PROGRESS', 'INVESTIGATION_STARTED');
-    advance('ESTIMATE_PENDING', 'ESTIMATE_PENDING');
-    advance('ESTIMATE_SUBMITTED', 'ESTIMATE_SUBMITTED');
-    advance('APPROVAL_PENDING', 'APPROVAL_PENDING');
+    if (role === 'field-agent') {
+      const latest = claimId ? getClaimById(claimId) : null;
+      if (latest?.state === 'INFO_REQUESTED' || assessmentMode === 'agent-context') {
+        advance('INFO_RECEIVED', 'AGENT_CONTEXT_RECEIVED');
+      }
+      advance('INVESTIGATION_IN_PROGRESS', 'AGENT_ASSESSMENT_STARTED');
+      advance('ESTIMATE_PENDING', 'ASSESSMENT_PENDING');
+      advance('ESTIMATE_SUBMITTED', 'AGENT_ASSESSMENT_SUBMITTED', { submittedBy: userId, mode: assessmentMode });
+    } else {
+      advance('INVESTIGATION_IN_PROGRESS', 'INVESTIGATION_STARTED');
+      advance('ESTIMATE_PENDING', 'ESTIMATE_PENDING');
+      advance('ESTIMATE_SUBMITTED', 'ESTIMATE_SUBMITTED');
+      advance('APPROVAL_PENDING', 'APPROVAL_PENDING');
+    }
     persistReport('submitted');
 
     sessionStorage.removeItem('inspectionData');

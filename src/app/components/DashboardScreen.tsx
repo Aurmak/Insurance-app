@@ -1,10 +1,10 @@
 import { useMemo } from 'react';
 import { useNavigate } from 'react-router';
-import { Box, Button, Card, CardContent, Chip, Container, Typography } from '@mui/material';
+import { Alert, Box, Button, Card, CardContent, Chip, Container, Typography } from '@mui/material';
 import { ArrowRight, BellRing, Clock3, FilePlus2, ShieldCheck, TriangleAlert } from 'lucide-react';
 import BottomNavigation from './BottomNavigation';
 import OfflineIndicator from './OfflineIndicator';
-import { getClaimsStore } from '../domain/claims/service';
+import { getClaimTimeline, getClaimsStore } from '../domain/claims/service';
 import { CLAIM_STATE_LABELS } from '../domain/claims/stateMachine';
 
 function getRoleLabel(role: string): string {
@@ -15,18 +15,38 @@ function getRoleLabel(role: string): string {
 export default function DashboardScreen() {
   const navigate = useNavigate();
   const role = sessionStorage.getItem('userRole') || 'policyholder';
+  const userId = sessionStorage.getItem('userId') || 'policyholder-demo';
   const store = getClaimsStore();
   const savedReports = JSON.parse(localStorage.getItem('savedReports') || '[]');
+  const assignedClaims = store.claims.filter((item) => item.assignedAgentId === userId);
 
   const metrics = useMemo(() => {
+    if (role === 'field-agent') {
+      const totalClaims = assignedClaims.length;
+      const activeClaims = assignedClaims.filter((item) => item.state !== 'CLOSED').length;
+      const pendingApprovals = assignedClaims.filter((item) => item.state === 'ASSIGNED').length;
+      const infoRequests = assignedClaims.filter((item) => item.state === 'INFO_REQUESTED').length;
+      return { totalClaims, activeClaims, pendingApprovals, infoRequests };
+    }
     const totalClaims = store.claims.length;
     const activeClaims = store.claims.filter((item) => item.state !== 'CLOSED').length;
-    const pendingApprovals = store.claims.filter((item) => item.state === 'ASSESSMENT_PENDING').length;
+    const pendingApprovals = store.claims.filter((item) => item.state === 'ASSIGNED').length;
     const infoRequests = store.claims.filter((item) => item.state === 'INFO_REQUESTED').length;
     return { totalClaims, activeClaims, pendingApprovals, infoRequests };
-  }, [store.claims]);
+  }, [assignedClaims, role, store.claims]);
 
-  const latestClaims = [...store.claims].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)).slice(0, 4);
+  const latestClaims = [...(role === 'field-agent' ? assignedClaims : store.claims)].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)).slice(0, 4);
+  const newAssignments = useMemo(
+    () =>
+      assignedClaims.filter((claim) => {
+        const timeline = getClaimTimeline(claim.id);
+        const hasSubmittedByAgent = timeline.some(
+          (event) => event.eventType.includes('ASSESSMENT_SUBMITTED') && event.actorUserId === userId
+        );
+        return claim.state === 'ASSIGNED' && !hasSubmittedByAgent;
+      }),
+    [assignedClaims, userId]
+  );
 
   return (
     <div className="mobile-container with-bottom-nav">
@@ -77,6 +97,11 @@ export default function DashboardScreen() {
             </Button>
           </CardContent>
         </Card>
+        {role === 'field-agent' && newAssignments.length > 0 && (
+          <Alert severity="info" sx={{ mb: 2.5 }}>
+            New assignment received: {newAssignments.length} claim{newAssignments.length > 1 ? 's' : ''} waiting for onsite assessment.
+          </Alert>
+        )}
 
         <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: 1.5, mb: 3 }}>
           <Card sx={{ borderRadius: 2.5 }}>
@@ -112,10 +137,12 @@ export default function DashboardScreen() {
           <Card sx={{ borderRadius: 2.5 }}>
             <CardContent sx={{ p: 2 }}>
               <Typography variant="caption" color="text.secondary">
-                Total Reports
+                {role === 'field-agent' ? 'My Submissions' : 'Total Reports'}
               </Typography>
               <Typography variant="h5" sx={{ fontWeight: 700 }}>
-                {savedReports.length}
+                {role === 'field-agent'
+                  ? savedReports.filter((item: any) => item.submittedByUserId === userId && (item.submittedObservationsIds || []).length > 0).length
+                  : savedReports.length}
               </Typography>
             </CardContent>
           </Card>

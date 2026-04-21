@@ -20,9 +20,7 @@ export async function createErpClaim(input: CreateErpClaimInput): Promise<{ exte
 export async function assignErpClaim(input: AssignErpClaimInput): Promise<{ agentId: string }> {
   // Demo-safe ERP assignment stub.
   await new Promise((resolve) => setTimeout(resolve, 300));
-  const agents = ['agent-pk-001', 'agent-pk-007', 'agent-pk-011'];
-  const selected = agents[Math.floor(Math.random() * agents.length)];
   return {
-    agentId: `${selected}#${input.externalClaimId.slice(-5)}`,
+    agentId: 'agent-pk-001',
   };
 }
