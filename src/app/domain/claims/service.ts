@@ -277,3 +277,91 @@ export function setAssigned(claimId: string, agentId: string, actorUserId: strin
 export function getClaimsStore(): ClaimStore {
   return loadStore();
 }
+
+export function seedDemoAssignedClaimsForAgent(agentId: string, insurerId: string = 'insurer-demo'): void {
+  const store = loadStore();
+  const existingDemo = store.claims.filter(
+    (claim) => claim.assignedAgentId === agentId && claim.policyNumber.startsWith('POL-DEMO-AGENT-')
+  );
+  if (existingDemo.length >= 3) return;
+
+  const now = Date.now();
+  const demos: Array<{
+    policyNumber: string;
+    lossType: Claim['lossType'];
+    address: string;
+    state: ClaimState;
+    reasonText?: string;
+    minutesAgo: number;
+  }> = [
+    {
+      policyNumber: 'POL-DEMO-AGENT-001',
+      lossType: 'collision',
+      address: 'Gulshan-e-Iqbal, Karachi',
+      state: 'ASSIGNED',
+      minutesAgo: 45,
+    },
+    {
+      policyNumber: 'POL-DEMO-AGENT-002',
+      lossType: 'third-party',
+      address: 'DHA Phase 6, Lahore',
+      state: 'INFO_REQUESTED',
+      reasonText: 'Please capture close-up photos of rear panel and add repairability notes.',
+      minutesAgo: 120,
+    },
+    {
+      policyNumber: 'POL-DEMO-AGENT-003',
+      lossType: 'theft',
+      address: 'Blue Area, Islamabad',
+      state: 'ASSIGNED',
+      minutesAgo: 15,
+    },
+  ];
+
+  demos.forEach((demo, index) => {
+    const createdAt = new Date(now - demo.minutesAgo * 60 * 1000).toISOString();
+    const claim: Claim = {
+      id: createId('claim'),
+      claimNumber: createClaimNumber(),
+      policyNumber: demo.policyNumber,
+      insurerId,
+      state: demo.state,
+      lossType: demo.lossType,
+      lossDateTime: createdAt,
+      lossLocation: {
+        lat: null,
+        lng: null,
+        address: demo.address,
+      },
+      createdByUserId: 'handler-demo',
+      assignedAgentId: agentId,
+      priority: index === 0 ? 'high' : 'normal',
+      slaDueAt: null,
+      reasonCode: demo.state === 'INFO_REQUESTED' ? 'MORE_CONTEXT_REQUIRED' : null,
+      reasonText: demo.reasonText || null,
+      externalClaimId: `${insurerId.toUpperCase()}-ERP-DEMO-${1000 + index}`,
+      createdAt,
+      updatedAt: createdAt,
+    };
+
+    store.claims.push(claim);
+    pushTimeline(store, claim.id, 'CLAIM_CREATED', 'handler-demo', { demoSeed: true }, null, 'DRAFT');
+    pushTimeline(store, claim.id, 'FNOL_SUBMITTED', 'handler-demo', { demoSeed: true }, 'DRAFT', 'FNOL_SUBMITTED');
+    pushTimeline(store, claim.id, 'ERP_CREATED', 'system', { externalClaimId: claim.externalClaimId }, 'FNOL_SUBMITTED', 'ERP_CREATED');
+    pushTimeline(store, claim.id, 'AGENT_ASSIGNED', 'handler-demo', { agentId, demoSeed: true }, 'ERP_CREATED', 'ASSIGNED');
+    if (demo.state === 'INFO_REQUESTED') {
+      pushTimeline(
+        store,
+        claim.id,
+        'INFO_REQUESTED',
+        'handler-demo',
+        { reasonText: demo.reasonText || 'Additional evidence requested.' },
+        'ASSIGNED',
+        'INFO_REQUESTED'
+      );
+    }
+    pushAudit(store, 'Claim', claim.id, 'DEMO_SEED_CREATE', 'system', null, claim);
+  });
+
+  saveStore(store);
+}
