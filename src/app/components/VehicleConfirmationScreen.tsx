@@ -26,6 +26,7 @@ import {
 } from '../domain/claims/service';
 import { createErpClaim, assignErpClaim } from '../domain/integrations/erpAdapter';
 import { verifyVehicleFromRegistry } from '../domain/integrations/vehicleVerification';
+import { PolicyVerificationResult, verifyPolicyValidity } from '../domain/integrations/policyVerification';
 
 interface VehicleData {
   media?: Array<{
@@ -93,6 +94,9 @@ export default function VehicleConfirmationScreen() {
   const [pakistanVehicleData, setPakistanVehicleData] = useState<PakistanVehicleData | null>(null);
   const [isVerifyingWithAPI, setIsVerifyingWithAPI] = useState(false);
   const [apiVerificationComplete, setApiVerificationComplete] = useState(false);
+  const [policyVerification, setPolicyVerification] = useState<PolicyVerificationResult | null>(null);
+  const [isCheckingPolicy, setIsCheckingPolicy] = useState(false);
+  const [policyCheckComplete, setPolicyCheckComplete] = useState(false);
   const [feedback, setFeedback] = useState('');
 
   const ensureActiveClaim = () => {
@@ -168,7 +172,16 @@ export default function VehicleConfirmationScreen() {
       return;
     }
     setIsVerifyingWithAPI(true);
+    setIsCheckingPolicy(true);
     setIsRunningChecks(true);
+
+    const currentClaim = getClaimById(claimId);
+    const policyNumber = currentClaim?.policyNumber || sessionStorage.getItem('policyNumber') || '';
+    const policyResult = await verifyPolicyValidity({
+      policyNumber,
+      insurerId: currentClaim?.insurerId || sessionStorage.getItem('insurerId') || 'insurer-demo',
+      claimId,
+    });
 
     const snapshot = await verifyVehicleFromRegistry({
       claimId,
@@ -200,6 +213,8 @@ export default function VehicleConfirmationScreen() {
 
     setPakistanVehicleData(verifiedVehicleData);
     setApiVerificationComplete(true);
+    setPolicyVerification(policyResult);
+    setPolicyCheckComplete(true);
     
     // Update fields with verified data
     setMake(verifiedVehicleData.make);
@@ -221,7 +236,16 @@ export default function VehicleConfirmationScreen() {
     setChecksResults(results);
     setIsRunningChecks(false);
     setIsVerifyingWithAPI(false);
+    setIsCheckingPolicy(false);
     setChecksComplete(true);
+
+    if (role === 'field-agent' && policyResult.status !== 'active') {
+      setFeedback(
+        policyResult.status === 'expired'
+          ? 'Policy has expired. Field assessment can continue only after handler validation.'
+          : 'Policy record not found. Confirm policy details with claim handler.'
+      );
+    }
   };
 
   const handleConfirm = async () => {
@@ -231,6 +255,14 @@ export default function VehicleConfirmationScreen() {
     }
     if (isMotorClaim && (!apiVerificationComplete || !pakistanVehicleData)) {
       setFeedback('Verify the vehicle with Excise & Taxation before continuing.');
+      return;
+    }
+    if (role === 'field-agent' && isMotorClaim && !policyCheckComplete) {
+      setFeedback('Verify policy validity before submitting field assessment.');
+      return;
+    }
+    if (role === 'field-agent' && isMotorClaim && policyVerification?.status !== 'active') {
+      setFeedback('Policy is not active. Assessment cannot be submitted until handler confirms policy.');
       return;
     }
 
@@ -267,6 +299,7 @@ export default function VehicleConfirmationScreen() {
       media: vehicleData?.media, // Include all captured media
       checks: checksResults,
       pakistanVerification: isMotorClaim && apiVerificationComplete ? pakistanVehicleData : null,
+      policyVerification: isMotorClaim ? policyVerification : null,
       claimLine,
       confirmedAt: new Date().toISOString()
     };
@@ -527,7 +560,7 @@ export default function VehicleConfirmationScreen() {
                     fullWidth
                     size="medium"
                     onClick={runVehicleChecks}
-                    disabled={isVerifyingWithAPI}
+                    disabled={isVerifyingWithAPI || isCheckingPolicy}
                     sx={{ 
                       mt: 2,
                       py: 1.5, 
@@ -536,13 +569,13 @@ export default function VehicleConfirmationScreen() {
                       color: '#9C27B0'
                     }}
                   >
-                    {isVerifyingWithAPI ? (
+                    {isVerifyingWithAPI || isCheckingPolicy ? (
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
                         <CircularProgress size={18} sx={{ color: '#9C27B0' }} />
-                        <span>Verifying with Excise & Taxation...</span>
+                        <span>Verifying vehicle and policy...</span>
                       </Box>
                     ) : (
-                      'Verify with Excise & Taxation'
+                      'Verify with Excise & Taxation + Policy'
                     )}
                   </Button>
                 )}
@@ -561,6 +594,41 @@ export default function VehicleConfirmationScreen() {
                     <CheckCircle2 size={18} color="#155724" />
                     <Typography variant="body2" sx={{ fontWeight: 600, color: '#155724' }}>
                       Verified with Excise & Taxation
+                    </Typography>
+                  </Box>
+                )}
+
+                {isMotorClaim && policyCheckComplete && policyVerification && (
+                  <Box
+                    sx={{
+                      mt: 1.2,
+                      p: 1.5,
+                      bgcolor:
+                        policyVerification.status === 'active'
+                          ? '#d4edda'
+                          : policyVerification.status === 'expired'
+                            ? '#fff3cd'
+                            : '#fee2e2',
+                      borderRadius: 1,
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 1,
+                    }}
+                  >
+                    {policyVerification.status === 'active' ? <CheckCircle2 size={18} color="#155724" /> : <AlertCircle size={18} color="#7f1d1d" />}
+                    <Typography
+                      variant="body2"
+                      sx={{
+                        fontWeight: 600,
+                        color:
+                          policyVerification.status === 'active'
+                            ? '#155724'
+                            : policyVerification.status === 'expired'
+                              ? '#854d0e'
+                              : '#7f1d1d',
+                      }}
+                    >
+                      Policy {policyVerification.policyNumber}: {policyVerification.message}
                     </Typography>
                   </Box>
                 )}
