@@ -365,3 +365,95 @@ export function seedDemoAssignedClaimsForAgent(agentId: string, insurerId: strin
 
   saveStore(store);
 }
+
+export function seedDemoPolicyholderOutcomeClaims(userId: string, insurerId: string = 'insurer-demo'): void {
+  const store = loadStore();
+  const existingDemo = store.claims.filter(
+    (claim) => claim.createdByUserId === userId && claim.policyNumber.startsWith('POL-DEMO-CUST-')
+  );
+  if (existingDemo.length >= 2) return;
+
+  const now = Date.now();
+  const demos: Array<{
+    policyNumber: string;
+    lossType: Claim['lossType'];
+    address: string;
+    state: ClaimState;
+    minutesAgo: number;
+    amountPaidPKR?: number;
+    rejectionReason?: string;
+  }> = [
+    {
+      policyNumber: 'POL-DEMO-CUST-001',
+      lossType: 'collision',
+      address: 'Clifton Block 5, Karachi',
+      state: 'PAID',
+      minutesAgo: 240,
+      amountPaidPKR: 185000,
+    },
+    {
+      policyNumber: 'POL-DEMO-CUST-002',
+      lossType: 'third-party',
+      address: 'Johar Town, Lahore',
+      state: 'REJECTED',
+      minutesAgo: 360,
+      rejectionReason: 'Claim rejected due to policy exclusion: commercial usage not covered under declared private use.',
+    },
+  ];
+
+  demos.forEach((demo, index) => {
+    const createdAt = new Date(now - demo.minutesAgo * 60 * 1000).toISOString();
+    const claim: Claim = {
+      id: createId('claim'),
+      claimNumber: createClaimNumber(),
+      policyNumber: demo.policyNumber,
+      insurerId,
+      state: demo.state,
+      lossType: demo.lossType,
+      lossDateTime: createdAt,
+      lossLocation: {
+        lat: null,
+        lng: null,
+        address: demo.address,
+      },
+      createdByUserId: userId,
+      assignedAgentId: `agent-pk-00${index + 1}`,
+      priority: 'normal',
+      slaDueAt: null,
+      reasonCode: demo.state === 'REJECTED' ? 'POLICY_EXCLUSION' : null,
+      reasonText: demo.rejectionReason || null,
+      externalClaimId: `${insurerId.toUpperCase()}-ERP-CUST-${2000 + index}`,
+      createdAt,
+      updatedAt: createdAt,
+    };
+
+    store.claims.push(claim);
+    pushTimeline(store, claim.id, 'CLAIM_CREATED', userId, { demoSeed: true }, null, 'DRAFT');
+    pushTimeline(store, claim.id, 'FNOL_SUBMITTED', userId, { demoSeed: true }, 'DRAFT', 'FNOL_SUBMITTED');
+    pushTimeline(store, claim.id, 'ERP_CREATED', 'system', { externalClaimId: claim.externalClaimId }, 'FNOL_SUBMITTED', 'ERP_CREATED');
+    pushTimeline(store, claim.id, 'AGENT_ASSIGNED', 'handler-demo', { agentId: claim.assignedAgentId }, 'ERP_CREATED', 'ASSIGNED');
+    pushTimeline(store, claim.id, 'ESTIMATE_SUBMITTED', claim.assignedAgentId || 'agent-pk-001', { demoSeed: true }, 'ASSIGNED', 'ESTIMATE_SUBMITTED');
+    pushTimeline(store, claim.id, 'APPROVAL_PENDING', 'handler-demo', {}, 'ESTIMATE_SUBMITTED', 'APPROVAL_PENDING');
+
+    if (demo.state === 'PAID') {
+      pushTimeline(store, claim.id, 'APPROVED', 'handler-demo', {}, 'APPROVAL_PENDING', 'APPROVED');
+      pushTimeline(store, claim.id, 'SETTLEMENT_PREPARED', 'handler-demo', { approvedAmountPKR: demo.amountPaidPKR }, 'APPROVED', 'SETTLEMENT_PREPARED');
+      pushTimeline(store, claim.id, 'PAYMENT_IN_PROGRESS', 'finance-demo', {}, 'SETTLEMENT_PREPARED', 'PAYMENT_IN_PROGRESS');
+      pushTimeline(store, claim.id, 'PAID', 'finance-demo', { amountPaidPKR: demo.amountPaidPKR, currency: 'PKR' }, 'PAYMENT_IN_PROGRESS', 'PAID');
+    } else {
+      pushTimeline(
+        store,
+        claim.id,
+        'REJECTED',
+        'handler-demo',
+        { reason: demo.rejectionReason || 'Claim not approved.' },
+        'APPROVAL_PENDING',
+        'REJECTED'
+      );
+    }
+
+    pushAudit(store, 'Claim', claim.id, 'DEMO_SEED_CREATE', 'system', null, claim);
+  });
+
+  saveStore(store);
+}

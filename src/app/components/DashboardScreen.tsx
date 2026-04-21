@@ -19,6 +19,7 @@ export default function DashboardScreen() {
   const store = getClaimsStore();
   const savedReports = JSON.parse(localStorage.getItem('savedReports') || '[]');
   const assignedClaims = store.claims.filter((item) => item.assignedAgentId === userId);
+  const policyholderClaims = store.claims.filter((item) => item.createdByUserId === userId);
 
   const metrics = useMemo(() => {
     if (role === 'field-agent') {
@@ -29,13 +30,13 @@ export default function DashboardScreen() {
       return { totalClaims, activeClaims, pendingApprovals, infoRequests };
     }
     const totalClaims = store.claims.length;
-    const activeClaims = store.claims.filter((item) => item.state !== 'CLOSED').length;
-    const pendingApprovals = store.claims.filter((item) => item.state === 'ASSIGNED').length;
-    const infoRequests = store.claims.filter((item) => item.state === 'INFO_REQUESTED').length;
+    const activeClaims = policyholderClaims.filter((item) => item.state !== 'CLOSED').length;
+    const pendingApprovals = policyholderClaims.filter((item) => item.state === 'PAID').length;
+    const infoRequests = policyholderClaims.filter((item) => item.state === 'REJECTED').length;
     return { totalClaims, activeClaims, pendingApprovals, infoRequests };
-  }, [assignedClaims, role, store.claims]);
+  }, [assignedClaims, policyholderClaims, role, store.claims]);
 
-  const latestClaims = [...(role === 'field-agent' ? assignedClaims : store.claims)].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)).slice(0, 4);
+  const latestClaims = [...(role === 'field-agent' ? assignedClaims : policyholderClaims)].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)).slice(0, 4);
   const newAssignments = useMemo(
     () =>
       assignedClaims.filter((claim) => {
@@ -117,7 +118,7 @@ export default function DashboardScreen() {
           <Card sx={{ borderRadius: 2.5 }}>
             <CardContent sx={{ p: 2 }}>
               <Typography variant="caption" color="text.secondary">
-                {role === 'field-agent' ? 'Assessments Pending' : 'Awaiting Assessment'}
+                {role === 'field-agent' ? 'Assessments Pending' : 'Paid'}
               </Typography>
               <Typography variant="h5" sx={{ fontWeight: 700 }}>
                 {metrics.pendingApprovals}
@@ -127,7 +128,7 @@ export default function DashboardScreen() {
           <Card sx={{ borderRadius: 2.5 }}>
             <CardContent sx={{ p: 2 }}>
               <Typography variant="caption" color="text.secondary">
-                {role === 'field-agent' ? 'Info Requests' : 'Action Needed'}
+                {role === 'field-agent' ? 'Info Requests' : 'Rejected'}
               </Typography>
               <Typography variant="h5" sx={{ fontWeight: 700 }}>
                 {metrics.infoRequests}
@@ -142,7 +143,7 @@ export default function DashboardScreen() {
               <Typography variant="h5" sx={{ fontWeight: 700 }}>
                 {role === 'field-agent'
                   ? savedReports.filter((item: any) => item.submittedByUserId === userId && (item.submittedObservationsIds || []).length > 0).length
-                  : savedReports.length}
+                  : policyholderClaims.length}
               </Typography>
             </CardContent>
           </Card>

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { Box, Button, Card, CardContent, Container, Typography } from '@mui/material';
 import { ShieldCheck } from 'lucide-react';
-import { seedDemoAssignedClaimsForAgent } from '../domain/claims/service';
+import { seedDemoAssignedClaimsForAgent, seedDemoPolicyholderOutcomeClaims } from '../domain/claims/service';
 
 export default function LoginScreen() {
   const navigate = useNavigate();
@@ -30,6 +30,8 @@ export default function LoginScreen() {
     sessionStorage.setItem('userId', nextUserId);
     if (role === 'field-agent') {
       seedDemoAssignedClaimsForAgent(nextUserId, 'insurer-demo');
+    } else if (role === 'policyholder') {
+      seedDemoPolicyholderOutcomeClaims(nextUserId, 'insurer-demo');
     }
     navigate('/dashboard');
   };

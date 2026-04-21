@@ -11,6 +11,8 @@ export default function ReportDetailScreen() {
   const { reportId } = useParams();
   const role = sessionStorage.getItem('userRole') || 'policyholder';
   const reports = JSON.parse(localStorage.getItem('savedReports') || '[]');
+  const claimOnlyId = reportId?.startsWith('claim-only-') ? reportId.replace('claim-only-', '') : null;
+  const claimOnly = claimOnlyId ? getClaimById(claimOnlyId) : null;
   const report = reports.find((item: any) => item.id === reportId);
 
   const claim = useMemo(() => {
@@ -23,7 +25,7 @@ export default function ReportDetailScreen() {
     return getClaimTimeline(report.claimId).sort((a, b) => b.eventAt.localeCompare(a.eventAt));
   }, [report?.claimId]);
 
-  if (!report) {
+  if (!report && !claimOnly) {
     return (
       <Box sx={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <Typography variant="body1">Claim record not found.</Typography>
@@ -31,9 +33,21 @@ export default function ReportDetailScreen() {
     );
   }
 
-  const observations = report.observations || [];
+  const paidEvent = claim ? timeline.find((event) => event.eventType === 'PAID') : null;
+  const rejectedEvent = claim ? timeline.find((event) => event.eventType === 'REJECTED') : null;
+  const amountPaid = paidEvent?.payload?.amountPaidPKR as number | undefined;
+  const rejectionReason =
+    (rejectedEvent?.payload?.reason as string | undefined) ||
+    (claim?.reasonText as string | undefined) ||
+    null;
+
+  const displayClaimNumber = report?.claimNumber || claimOnly?.claimNumber || `CLAIM-${(reportId || '').slice(-5)}`;
+  const displayAsset = report?.vehicleName || (claimOnly ? `${claimOnly.lossType.replaceAll('-', ' ')} claim` : 'N/A');
+  const displayDate = report?.date || claimOnly?.updatedAt || new Date().toISOString();
+  const observations = report?.observations || [];
 
   const handleExport = async () => {
+    if (!report) return;
     await generateInspectionPDF(
       report.vehicleName || 'Unknown Vehicle',
       report.inspectionType || 'collision',
@@ -69,27 +83,47 @@ export default function ReportDetailScreen() {
               Claim Number
             </Typography>
             <Typography variant="h6" sx={{ fontWeight: 700, mb: 1 }}>
-              {report.claimNumber || `CLAIM-${report.id.slice(-5)}`}
+              {displayClaimNumber}
             </Typography>
             <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-              Asset: {report.vehicleName || 'N/A'}
+              Asset: {displayAsset}
             </Typography>
             <Typography variant="body2" color="text.secondary" sx={{ mb: 1.5 }}>
-              Created: {new Date(report.date).toLocaleString()}
+              Updated: {new Date(displayDate).toLocaleString()}
             </Typography>
             <Chip label={claim ? CLAIM_STATE_LABELS[claim.state] : 'Saved'} color={claim?.state === 'REJECTED' ? 'error' : 'default'} />
           </CardContent>
         </Card>
 
-        {report.vehicleData?.pakistanVerification && (
+        {(claim?.state === 'PAID' || claim?.state === 'REJECTED') && (
+          <Card sx={{ borderRadius: 3, mb: 2.5, border: claim.state === 'PAID' ? '1px solid #86EFAC' : '1px solid #FCA5A5' }}>
+            <CardContent sx={{ p: 2.5 }}>
+              <Typography variant="subtitle1" sx={{ fontWeight: 700, mb: 1.2 }}>
+                Outcome Summary
+              </Typography>
+              {claim.state === 'PAID' && (
+                <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                  Payment released: PKR {Number(amountPaid || 0).toLocaleString()}
+                </Typography>
+              )}
+              {claim.state === 'REJECTED' && (
+                <Typography variant="body2" color="text.secondary">
+                  Rejection reason: {rejectionReason || 'Claim not approved by handler.'}
+                </Typography>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
+        {report?.vehicleData?.pakistanVerification && (
           <Card sx={{ borderRadius: 3, mb: 2.5, border: '1px solid #BBF7D0', bgcolor: '#F0FDF4' }}>
             <CardContent sx={{ p: 2.5 }}>
               <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1.5 }}>
                 Customs / Excise Verification Snapshot
               </Typography>
-              <Typography variant="body2">Registration: {report.vehicleData.pakistanVerification.registrationNo}</Typography>
-              <Typography variant="body2">Make/Model: {report.vehicleData.pakistanVerification.make} {report.vehicleData.pakistanVerification.vehicleModel}</Typography>
-              <Typography variant="body2">Owner: {report.vehicleData.pakistanVerification.ownerName}</Typography>
+              <Typography variant="body2">Registration: {report?.vehicleData?.pakistanVerification.registrationNo}</Typography>
+              <Typography variant="body2">Make/Model: {report?.vehicleData?.pakistanVerification.make} {report?.vehicleData?.pakistanVerification.vehicleModel}</Typography>
+              <Typography variant="body2">Owner: {report?.vehicleData?.pakistanVerification.ownerName}</Typography>
             </CardContent>
           </Card>
         )}
@@ -134,7 +168,7 @@ export default function ReportDetailScreen() {
         </Card>
 
         <Alert severity="info" sx={{ mb: 2 }}>
-          Findings captured: {observations.length}. Submitted findings: {(report.submittedObservationsIds || []).length}.
+          Findings captured: {observations.length}. Submitted findings: {(report?.submittedObservationsIds || []).length}.
         </Alert>
 
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.3 }}>
@@ -151,7 +185,7 @@ export default function ReportDetailScreen() {
               {claim?.state === 'INFO_REQUESTED' ? 'Add Requested Context' : 'Add Field Assessment'}
             </Button>
           )}
-          <Button variant="outlined" startIcon={<FileDown size={18} />} onClick={handleExport}>
+          <Button variant="outlined" startIcon={<FileDown size={18} />} onClick={handleExport} disabled={!report}>
             Export Claim PDF
           </Button>
           <Button variant="outlined" startIcon={<Share2 size={18} />} onClick={handleShare}>

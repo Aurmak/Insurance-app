@@ -23,6 +23,15 @@ interface SavedClaimReport {
   submissionMode?: string;
 }
 
+interface PolicyholderListEntry {
+  id: string;
+  routeId: string;
+  claimNumber: string;
+  assetName: string;
+  date: string;
+  claimState: ClaimState | null;
+}
+
 function getClaimLineFromLossType(lossType: string) {
   if (['collision', 'third-party', 'theft', 'roadside-incident'].includes(lossType)) return 'motor';
   if (['fire-damage', 'flood-water', 'burglary'].includes(lossType)) return 'property';
@@ -70,11 +79,44 @@ export default function ReportsHistoryScreen() {
   );
 
   const policyholderStats = useMemo(() => {
-    const total = reports.length;
-    const open = reports.filter((item) => item.claimState && item.claimState !== 'CLOSED').length;
-    const submitted = reports.filter((item) => (item.submittedObservationsIds || []).length > 0).length;
+    const policyholderClaims = store.claims.filter((claim) => claim.createdByUserId === userId);
+    const total = Math.max(reports.length, policyholderClaims.length);
+    const open = policyholderClaims.filter((item) => item.state !== 'CLOSED').length;
+    const submitted = policyholderClaims.filter((item) => item.state === 'PAID' || item.state === 'REJECTED').length;
     return { total, open, submitted };
-  }, [reports]);
+  }, [reports.length, store.claims, userId]);
+
+  const policyholderListEntries = useMemo(() => {
+    const policyholderClaims = store.claims.filter((claim) => claim.createdByUserId === userId);
+    const claimMap = new Map(policyholderClaims.map((claim) => [claim.id, claim]));
+
+    const fromReports: PolicyholderListEntry[] = reports
+      .filter((report) => !report.submittedByRole || report.submittedByRole === 'policyholder')
+      .map((report) => {
+        const linkedClaim = report.claimId ? claimMap.get(report.claimId) : null;
+        return {
+          id: report.id,
+          routeId: report.id,
+          claimNumber: report.claimNumber || linkedClaim?.claimNumber || `CLAIM-${report.id.slice(-5)}`,
+          assetName: report.vehicleName || 'Asset not specified',
+          date: report.date,
+          claimState: (linkedClaim?.state || report.claimState || null) as ClaimState | null,
+        };
+      });
+
+    const fromClaimsOnly: PolicyholderListEntry[] = policyholderClaims
+      .filter((claim) => !fromReports.some((entry) => entry.claimNumber === claim.claimNumber))
+      .map((claim) => ({
+        id: `claim-only-${claim.id}`,
+        routeId: `claim-only-${claim.id}`,
+        claimNumber: claim.claimNumber,
+        assetName: `${claim.lossType.replaceAll('-', ' ')} claim`,
+        date: claim.updatedAt,
+        claimState: claim.state,
+      }));
+
+    return [...fromReports, ...fromClaimsOnly].sort((a, b) => b.date.localeCompare(a.date));
+  }, [reports, store.claims, userId]);
 
   const launchAssessment = (claim: Claim, mode: 'agent' | 'agent-context') => {
     sessionStorage.setItem('activeClaimId', claim.id);
@@ -266,7 +308,7 @@ export default function ReportsHistoryScreen() {
           </Card>
         </Box>
 
-        {reports.length === 0 ? (
+        {policyholderListEntries.length === 0 ? (
           <Card sx={{ textAlign: 'center' }}>
             <CardContent sx={{ p: 4 }}>
               <FileText size={52} style={{ color: '#94A3B8', marginBottom: 14 }} />
@@ -283,19 +325,16 @@ export default function ReportsHistoryScreen() {
           </Card>
         ) : (
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-            {reports
-              .slice()
-              .sort((a, b) => b.date.localeCompare(a.date))
-              .map((report) => (
-                <Card key={report.id} onClick={() => navigate(`/report/${report.id}`)} sx={{ cursor: 'pointer' }}>
+            {policyholderListEntries.map((report) => (
+                <Card key={report.id} onClick={() => navigate(`/report/${report.routeId}`)} sx={{ cursor: 'pointer' }}>
                   <CardContent sx={{ p: 2 }}>
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1 }}>
                       <Box sx={{ mr: 2 }}>
                         <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
-                          {report.claimNumber || `CLAIM-${report.id.slice(-5)}`}
+                          {report.claimNumber}
                         </Typography>
                         <Typography variant="body2" color="text.secondary">
-                          {report.vehicleName || 'Asset not specified'}
+                          {report.assetName}
                         </Typography>
                       </Box>
                       <ChevronRight size={20} color="#64748B" />
@@ -311,7 +350,7 @@ export default function ReportsHistoryScreen() {
                         size="small"
                         icon={<ShieldCheck size={14} />}
                         label={report.claimState ? CLAIM_STATE_LABELS[report.claimState] : 'Saved'}
-                        color={report.claimState === 'REJECTED' ? 'error' : report.claimState === 'CLOSED' ? 'success' : 'default'}
+                        color={report.claimState === 'REJECTED' ? 'error' : report.claimState === 'PAID' || report.claimState === 'CLOSED' ? 'success' : 'default'}
                       />
                     </Box>
                   </CardContent>
