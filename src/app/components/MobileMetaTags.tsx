@@ -51,7 +51,7 @@ export default function MobileMetaTags() {
     themeColor.setAttribute('content', '#ffffff');
 
     // Set app title
-    document.title = 'Car Inspect';
+    document.title = 'PQGTL Insurace';
   }, []);
 
   return null;

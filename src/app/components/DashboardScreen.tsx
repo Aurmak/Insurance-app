@@ -1,11 +1,32 @@
 import { useMemo } from 'react';
 import { useNavigate } from 'react-router';
 import { Alert, Box, Button, Card, CardContent, Chip, Container, Typography } from '@mui/material';
-import { ArrowRight, BellRing, Clock3, FilePlus2, ShieldCheck, TriangleAlert } from 'lucide-react';
+import { Clock3, FilePlus2, TriangleAlert } from 'lucide-react';
 import BottomNavigation from './BottomNavigation';
 import OfflineIndicator from './OfflineIndicator';
-import { getClaimTimeline, getClaimsStore } from '../domain/claims/service';
+import { getClaimTimeline, getClaimsStore, seedDemoPolicyholderEvidenceReports, seedDemoPolicyholderOutcomeClaims } from '../domain/claims/service';
 import { CLAIM_STATE_LABELS } from '../domain/claims/stateMachine';
+import { ClaimState } from '../domain/claims/types';
+
+const POLICYHOLDER_ACTIVE_STATES: ClaimState[] = [
+  'DRAFT',
+  'FNOL_SUBMITTED',
+  'VEHICLE_VERIFIED',
+  'ERP_CREATED',
+  'ASSIGNED',
+  'INVESTIGATION_IN_PROGRESS',
+  'INFO_REQUESTED',
+  'INFO_RECEIVED',
+  'ESTIMATE_PENDING',
+  'ESTIMATE_SUBMITTED',
+  'APPROVAL_PENDING',
+  'APPROVED',
+  'PARTIALLY_APPROVED',
+  'REPAIR_IN_PROGRESS',
+  'REPAIR_COMPLETED',
+  'SETTLEMENT_PREPARED',
+  'PAYMENT_IN_PROGRESS',
+];
 
 function getRoleLabel(role: string): string {
   if (role === 'field-agent') return 'Field Agent';
@@ -16,6 +37,10 @@ export default function DashboardScreen() {
   const navigate = useNavigate();
   const role = sessionStorage.getItem('userRole') || 'policyholder';
   const userId = sessionStorage.getItem('userId') || 'policyholder-demo';
+  if (role === 'policyholder') {
+    seedDemoPolicyholderOutcomeClaims(userId, 'insurer-demo');
+    seedDemoPolicyholderEvidenceReports(userId);
+  }
   const store = getClaimsStore();
   const savedReports = JSON.parse(localStorage.getItem('savedReports') || '[]');
   const assignedClaims = store.claims.filter((item) => item.assignedAgentId === userId);
@@ -27,16 +52,18 @@ export default function DashboardScreen() {
       const activeClaims = assignedClaims.filter((item) => item.state !== 'CLOSED').length;
       const pendingApprovals = assignedClaims.filter((item) => item.state === 'ASSIGNED').length;
       const infoRequests = assignedClaims.filter((item) => item.state === 'INFO_REQUESTED').length;
-      return { totalClaims, activeClaims, pendingApprovals, infoRequests };
+      return { totalClaims, activeClaims, pendingApprovals, infoRequests, infoRequired: 0 };
     }
     const totalClaims = store.claims.length;
-    const activeClaims = policyholderClaims.filter((item) => item.state !== 'CLOSED').length;
+    const activeClaims = policyholderClaims.filter((item) => POLICYHOLDER_ACTIVE_STATES.includes(item.state)).length;
     const pendingApprovals = policyholderClaims.filter((item) => item.state === 'PAID').length;
     const infoRequests = policyholderClaims.filter((item) => item.state === 'REJECTED').length;
-    return { totalClaims, activeClaims, pendingApprovals, infoRequests };
+    const infoRequired = policyholderClaims.filter((item) => item.state === 'INFO_REQUESTED').length;
+    return { totalClaims, activeClaims, pendingApprovals, infoRequests, infoRequired };
   }, [assignedClaims, policyholderClaims, role, store.claims]);
 
   const latestClaims = [...(role === 'field-agent' ? assignedClaims : policyholderClaims)].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)).slice(0, 4);
+  const latestPolicyholderClaim = [...policyholderClaims].sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))[0] || null;
   const newAssignments = useMemo(
     () =>
       assignedClaims.filter((claim) => {
@@ -48,6 +75,14 @@ export default function DashboardScreen() {
       }),
     [assignedClaims, userId]
   );
+  const reportsHistoryBase = '/reports-history';
+  const activeClaimsTarget = role === 'field-agent' ? reportsHistoryBase : `${reportsHistoryBase}?view=policyholder-pending`;
+  const pendingOrPaidTarget = role === 'field-agent' ? reportsHistoryBase : `${reportsHistoryBase}?view=policyholder-paid`;
+  const infoOrRejectedTarget =
+    role === 'field-agent' ? `${reportsHistoryBase}?view=agent-info-requests` : `${reportsHistoryBase}?view=policyholder-rejected`;
+  const infoRequiredTarget = `${reportsHistoryBase}?view=policyholder-info-requests`;
+  const totalTarget = role === 'field-agent' ? reportsHistoryBase : `${reportsHistoryBase}?view=policyholder-reported`;
+  const isActiveClaimsDisabled = metrics.activeClaims === 0;
 
   return (
     <div className="mobile-container with-bottom-nav">
@@ -55,10 +90,10 @@ export default function DashboardScreen() {
 
       <Box className="app-header" sx={{ p: 2 }}>
         <Typography variant="overline" sx={{ letterSpacing: 1.1, color: 'text.secondary' }}>
-          Pakistan Insurance Claims
+          {role === 'field-agent' ? 'Field Operations' : 'Policyholder Portal'}
         </Typography>
         <Typography variant="h6" sx={{ fontWeight: 700 }}>
-          Welcome, {getRoleLabel(role)}
+          {role === 'field-agent' ? `Welcome, ${getRoleLabel(role)}` : 'Your Claim Dashboard'}
         </Typography>
       </Box>
 
@@ -67,7 +102,7 @@ export default function DashboardScreen() {
           sx={{
             mb: 3,
             borderRadius: 3,
-            background: 'linear-gradient(135deg, #1D4ED8 0%, #2563EB 55%, #3B82F6 100%)',
+            background: 'linear-gradient(135deg, #650028 0%, #8B0037 55%, #BC9633 100%)',
             color: '#fff',
           }}
         >
@@ -77,8 +112,8 @@ export default function DashboardScreen() {
             </Typography>
             <Typography variant="body2" sx={{ color: '#EAF1FF', mb: 2 }}>
               {role === 'field-agent'
-                ? 'Open assigned claims, capture on-site evidence, and submit findings to insurer ERP.'
-                : 'Report motor, property, device, or industrial claims and track progress from FNOL to settlement.'}
+                ? 'Open assigned claims, capture on-site evidence, and send updates to the back-office claim team.'
+                : 'Report incidents across motor, property, device, and industrial coverage, then track decisions and payment progress in one place.'}
             </Typography>
             <Button
               variant="outlined"
@@ -103,9 +138,26 @@ export default function DashboardScreen() {
             New assignment received: {newAssignments.length} claim{newAssignments.length > 1 ? 's' : ''} waiting for onsite assessment.
           </Alert>
         )}
+        {role === 'policyholder' && latestPolicyholderClaim && (
+          <Card sx={{ borderRadius: 3, mb: 2.5, border: '1px solid #E2E8F0', bgcolor: '#F8FAFC' }}>
+            <CardContent sx={{ p: 2.5 }}>
+              <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 1.2 }}>
+                Policy Details on File
+              </Typography>
+              <Typography variant="body2">Policy number: {latestPolicyholderClaim.policyNumber}</Typography>
+              <Typography variant="body2">Insurer case reference: {latestPolicyholderClaim.externalClaimId || 'Pending assignment'}</Typography>
+              <Typography variant="body2">Incident location: {latestPolicyholderClaim.lossLocation?.address || 'Location not available'}</Typography>
+            </CardContent>
+          </Card>
+        )}
 
         <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: 1.5, mb: 3 }}>
-          <Card sx={{ borderRadius: 2.5 }}>
+          <Card
+            sx={{ borderRadius: 2.5, cursor: isActiveClaimsDisabled ? 'not-allowed' : 'pointer', opacity: isActiveClaimsDisabled ? 0.6 : 1 }}
+            onClick={() => {
+              if (!isActiveClaimsDisabled) navigate(activeClaimsTarget);
+            }}
+          >
             <CardContent sx={{ p: 2 }}>
               <Typography variant="caption" color="text.secondary">
                 Active Claims
@@ -115,7 +167,10 @@ export default function DashboardScreen() {
               </Typography>
             </CardContent>
           </Card>
-          <Card sx={{ borderRadius: 2.5 }}>
+          <Card
+            sx={{ borderRadius: 2.5, cursor: 'pointer' }}
+            onClick={() => navigate(pendingOrPaidTarget)}
+          >
             <CardContent sx={{ p: 2 }}>
               <Typography variant="caption" color="text.secondary">
                 {role === 'field-agent' ? 'Assessments Pending' : 'Paid'}
@@ -125,20 +180,26 @@ export default function DashboardScreen() {
               </Typography>
             </CardContent>
           </Card>
-          <Card sx={{ borderRadius: 2.5 }}>
+          <Card
+            sx={{ borderRadius: 2.5, cursor: 'pointer' }}
+            onClick={() => navigate(infoOrRejectedTarget)}
+          >
             <CardContent sx={{ p: 2 }}>
               <Typography variant="caption" color="text.secondary">
-                {role === 'field-agent' ? 'Info Requests' : 'Rejected'}
+                {role === 'field-agent' ? 'Information Required' : 'Rejected'}
               </Typography>
               <Typography variant="h5" sx={{ fontWeight: 700 }}>
                 {metrics.infoRequests}
               </Typography>
             </CardContent>
           </Card>
-          <Card sx={{ borderRadius: 2.5 }}>
+          <Card
+            sx={{ borderRadius: 2.5, cursor: 'pointer' }}
+            onClick={() => navigate(totalTarget)}
+          >
             <CardContent sx={{ p: 2 }}>
               <Typography variant="caption" color="text.secondary">
-                {role === 'field-agent' ? 'My Submissions' : 'Total Reports'}
+                {role === 'field-agent' ? 'My Submissions' : 'Reported'}
               </Typography>
               <Typography variant="h5" sx={{ fontWeight: 700 }}>
                 {role === 'field-agent'
@@ -147,26 +208,22 @@ export default function DashboardScreen() {
               </Typography>
             </CardContent>
           </Card>
+          {role === 'policyholder' && (
+            <Card
+              sx={{ borderRadius: 2.5, cursor: 'pointer' }}
+              onClick={() => navigate(infoRequiredTarget)}
+            >
+              <CardContent sx={{ p: 2 }}>
+                <Typography variant="caption" color="text.secondary">
+                  Information Required
+                </Typography>
+                <Typography variant="h5" sx={{ fontWeight: 700 }}>
+                  {metrics.infoRequired}
+                </Typography>
+              </CardContent>
+            </Card>
+          )}
         </Box>
-
-        <Card sx={{ borderRadius: 3, mb: 3 }}>
-          <CardContent sx={{ p: 2.5 }}>
-            <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 2 }}>
-              Priority Worklist
-            </Typography>
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
-              <Button variant="outlined" fullWidth onClick={() => navigate('/reports-history')} endIcon={<ArrowRight size={18} />}>
-                {role === 'field-agent' ? 'View Assigned Claims' : 'View All Claims and Reports'}
-              </Button>
-              <Button variant="outlined" fullWidth onClick={() => navigate('/reports-history')} startIcon={<BellRing size={18} />}>
-                {role === 'field-agent' ? 'Claims Requiring Visit' : 'Pending Information Requests'}
-              </Button>
-              <Button variant="outlined" fullWidth onClick={() => navigate('/reports-history')} startIcon={<ShieldCheck size={18} />}>
-                {role === 'field-agent' ? 'Assessments Submitted by Me' : 'Verification and Assignment Status'}
-              </Button>
-            </Box>
-          </CardContent>
-        </Card>
 
         <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 1.5 }}>
           Latest Claim Activity
@@ -182,7 +239,7 @@ export default function DashboardScreen() {
         ) : (
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
             {latestClaims.map((claim) => (
-              <Card key={claim.id} onClick={() => navigate('/reports-history')} sx={{ borderRadius: 2.5, cursor: 'pointer' }}>
+              <Card key={claim.id} onClick={() => navigate(`/report/claim-only-${claim.id}`)} sx={{ borderRadius: 2.5, cursor: 'pointer' }}>
                 <CardContent sx={{ p: 2 }}>
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <Box>

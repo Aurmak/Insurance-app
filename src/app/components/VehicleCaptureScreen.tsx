@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router';
 import { 
   Container, 
@@ -16,6 +16,8 @@ import {
   Alert
 } from '@mui/material';
 import { ArrowLeft, Camera, Upload, Trash2, Video, Mic, StopCircle, Play, Pause, Square } from 'lucide-react';
+import { CLAIM_STATE_LABELS } from '../domain/claims/stateMachine';
+import { getClaimById } from '../domain/claims/service';
 
 interface CapturedMedia {
   id: string;
@@ -25,11 +27,30 @@ interface CapturedMedia {
   note?: string;
 }
 
+const AGENT_DEMO_POLICYHOLDER_NAMES: Record<string, string> = {
+  'POL-DEMO-AGENT-001': 'Muhammad Ahmed',
+  'POL-DEMO-AGENT-002': 'Ayesha Khan',
+  'POL-DEMO-AGENT-003': 'Bilal Raza',
+};
+
+function formatPolicyholderName(policyNumber: string | null | undefined, createdByUserId: string | null | undefined): string {
+  if (policyNumber && AGENT_DEMO_POLICYHOLDER_NAMES[policyNumber]) return AGENT_DEMO_POLICYHOLDER_NAMES[policyNumber];
+  if (createdByUserId && !createdByUserId.includes('handler')) {
+    return createdByUserId
+      .replaceAll('-', ' ')
+      .replaceAll('_', ' ')
+      .replace(/\b\w/g, (char) => char.toUpperCase());
+  }
+  return 'On file with insurer';
+}
+
 export default function VehicleCaptureScreen() {
   const navigate = useNavigate();
   const role = sessionStorage.getItem('userRole') || 'policyholder';
   const activeClaimId = sessionStorage.getItem('activeClaimId');
+  const assessmentMode = sessionStorage.getItem('assessmentMode') || 'standard';
   const claimLine = sessionStorage.getItem('claimLine') || 'motor';
+  const activeClaim = useMemo(() => (activeClaimId ? getClaimById(activeClaimId) : null), [activeClaimId]);
   const [capturedMedia, setCapturedMedia] = useState<CapturedMedia[]>([]);
   const [currentMedia, setCurrentMedia] = useState<CapturedMedia | null>(null);
   const [currentNote, setCurrentNote] = useState('');
@@ -301,6 +322,14 @@ export default function VehicleCaptureScreen() {
   };
 
   const handleBack = () => {
+    if (role === 'field-agent') {
+      navigate(assessmentMode === 'agent-context' ? '/reports-history?view=agent-info-requests' : '/reports-history');
+      return;
+    }
+    if (assessmentMode === 'policyholder-context' && activeClaimId) {
+      navigate(`/report/claim-only-${activeClaimId}`);
+      return;
+    }
     navigate('/inspection-type');
   };
 
@@ -354,6 +383,34 @@ export default function VehicleCaptureScreen() {
       </Box>
 
       <Container sx={{ py: 3, pb: 6 }}>
+        {role === 'field-agent' && activeClaim && (
+          <Card sx={{ mb: 2.5, borderRadius: 2, border: '1px solid #E2E8F0', bgcolor: '#FFF7ED' }}>
+            <CardContent sx={{ p: 2 }}>
+              <Typography variant="overline" color="text.secondary">
+                Assigned Claim Context
+              </Typography>
+              <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
+                {activeClaim.claimNumber}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Policy: {activeClaim.policyNumber}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Policyholder: {formatPolicyholderName(activeClaim.policyNumber, activeClaim.createdByUserId)}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Loss Type: {activeClaim.lossType.replace('-', ' ')}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Location: {activeClaim.lossLocation.address}
+              </Typography>
+              <Typography variant="body2" sx={{ mt: 0.75, fontWeight: 600, color: '#8B0037' }}>
+                Current Status: {CLAIM_STATE_LABELS[activeClaim.state]}
+              </Typography>
+            </CardContent>
+          </Card>
+        )}
+
         {!currentMedia && capturedMedia.length === 0 ? (
           // Initial empty state
           <Box sx={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 180px)' }}>

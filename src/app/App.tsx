@@ -23,26 +23,26 @@ import PersonaGatewayScreen from '@/app/components/PersonaGatewayScreen';
 const theme = createTheme({
   palette: {
     mode: 'light',
-    // Energetic Primary palette (Blue)
+    // PQGTL Primary palette (Burgundy)
     primary: {
-      main: '#2563EB',
-      light: '#60A5FA',
-      dark: '#1D4ED8',
+      main: '#8B0037',
+      light: '#B44569',
+      dark: '#650028',
       contrastText: '#FFFFFF',
     },
-    // Fresh secondary palette (Teal)
+    // PQGTL Secondary palette (Gold)
     secondary: {
-      main: '#14B8A6',
-      light: '#5EEAD4',
-      dark: '#0F766E',
-      contrastText: '#FFFFFF',
+      main: '#BC9633',
+      light: '#D4B46B',
+      dark: '#8F7121',
+      contrastText: '#1A1A1A',
     },
-    // Warm tertiary palette (Amber)
+    // Warm tertiary palette (Amber/Gold accent)
     tertiary: {
-      main: '#F59E0B',
-      light: '#FCD34D',
-      dark: '#B45309',
-      contrastText: '#FFFFFF',
+      main: '#BF952F',
+      light: '#D7B865',
+      dark: '#8D6D1D',
+      contrastText: '#1A1A1A',
     },
     // Error palette (Bright Red)
     error: {
@@ -72,28 +72,28 @@ const theme = createTheme({
     },
     // Background colors (light and clean)
     background: {
-      default: '#F8FAFF',
+      default: '#FBF8F7',
       paper: '#FFFFFF',
     },
     // Surface colors
     surface: {
       main: '#FFFFFF',
-      dim: '#EEF4FF',
+      dim: '#F7F0F3',
       bright: '#FFFFFF',
-      container: '#E8F0FF',
-      containerLow: '#F8FAFF',
+      container: '#F7EAF0',
+      containerLow: '#FCF8F9',
       containerLowest: '#FFFFFF',
-      containerHigh: '#D7E6FF',
-      containerHighest: '#C6DBFF',
+      containerHigh: '#EFDDE5',
+      containerHighest: '#E4CBD6',
     },
     // Colorful containers
     primaryContainer: {
-      main: '#E8F0FF',
-      onContainer: '#1E3A8A',
+      main: '#F7EAF0',
+      onContainer: '#5A0024',
     },
     secondaryContainer: {
-      main: '#E6FFFA',
-      onContainer: '#115E59',
+      main: '#F8F2E3',
+      onContainer: '#5F4A16',
     },
     tertiaryContainer: {
       main: '#FFF3D6',
@@ -113,15 +113,15 @@ const theme = createTheme({
     divider: '#E0E0E0',
     // Action states with vibrant colors
     action: {
-      active: 'rgba(37, 99, 235, 0.54)',
-      hover: 'rgba(37, 99, 235, 0.08)',
+      active: 'rgba(139, 0, 55, 0.54)',
+      hover: 'rgba(139, 0, 55, 0.08)',
       hoverOpacity: 0.08,
-      selected: 'rgba(37, 99, 235, 0.16)',
+      selected: 'rgba(139, 0, 55, 0.16)',
       selectedOpacity: 0.16,
       disabled: 'rgba(26, 26, 26, 0.38)',
       disabledBackground: 'rgba(26, 26, 26, 0.12)',
       disabledOpacity: 0.38,
-      focus: 'rgba(37, 99, 235, 0.12)',
+      focus: 'rgba(139, 0, 55, 0.12)',
       focusOpacity: 0.12,
       activatedOpacity: 0.16,
     },
@@ -130,8 +130,8 @@ const theme = createTheme({
     fontFamily: '"Avenir Next", "Segoe UI", "Roboto", "Helvetica", "Arial", sans-serif',
     fontSize: 16,  // Increased from 14px for better accessibility
     fontWeightLight: 300,
-    fontWeightRegular: 400,
-    fontWeightMedium: 500,
+    fontWeightRegular: 450,
+    fontWeightMedium: 600,
     fontWeightBold: 700,
     // Display styles - large and bold
     displayLarge: {
@@ -210,14 +210,14 @@ const theme = createTheme({
     labelMedium: {
       fontFamily: '"Roboto", sans-serif',
       fontSize: '0.875rem', // 14px (increased from 12px)
-      fontWeight: 500,
+      fontWeight: 600,
       lineHeight: 1.43,
       letterSpacing: '0.5px',
     },
     labelSmall: {
       fontFamily: '"Roboto", sans-serif',
       fontSize: '0.8125rem', // 13px (increased from 11px)
-      fontWeight: 500,
+      fontWeight: 600,
       lineHeight: 1.45,
       letterSpacing: '0.5px',
     },
@@ -239,7 +239,7 @@ const theme = createTheme({
     bodySmall: {
       fontFamily: '"Roboto", sans-serif',
       fontSize: '0.875rem', // 14px (increased from 12px)
-      fontWeight: 400,
+      fontWeight: 500,
       lineHeight: 1.43,
       letterSpacing: '0.4px',
     },
@@ -296,21 +296,21 @@ const theme = createTheme({
     subtitle2: {
       fontFamily: '"Roboto", sans-serif',
       fontSize: '1rem', // 16px
-      fontWeight: 500,
+      fontWeight: 600,
       lineHeight: 1.5,
       letterSpacing: '0.1px',
     },
     body1: {
       fontFamily: '"Roboto", sans-serif',
       fontSize: '1rem', // 16px
-      fontWeight: 400,
+      fontWeight: 500,
       lineHeight: 1.5,
       letterSpacing: '0.5px',
     },
     body2: {
       fontFamily: '"Roboto", sans-serif',
       fontSize: '0.875rem', // 14px
-      fontWeight: 400,
+      fontWeight: 500,
       lineHeight: 1.43,
       letterSpacing: '0.25px',
     },
@@ -325,16 +325,16 @@ const theme = createTheme({
     caption: {
       fontFamily: '"Roboto", sans-serif',
       fontSize: '0.875rem', // 14px (increased from 12px)
-      fontWeight: 400,
+      fontWeight: 500,
       lineHeight: 1.43,
       letterSpacing: '0.4px',
     },
     overline: {
       fontFamily: '"Roboto", sans-serif',
       fontSize: '0.875rem', // 14px
-      fontWeight: 500,
+      fontWeight: 600,
       lineHeight: 2.2,
-      letterSpacing: '1px',
+      letterSpacing: '0.8px',
       textTransform: 'uppercase',
     },
   },
@@ -403,16 +403,16 @@ const theme = createTheme({
         },
         outlined: {
           borderWidth: 2,  // Thicker border for visibility
-          borderColor: '#2563EB',
+          borderColor: '#8B0037',
           '&:hover': {
             borderWidth: 2,
-            backgroundColor: 'rgba(37, 99, 235, 0.08)',
-            borderColor: '#1D4ED8',
+            backgroundColor: 'rgba(139, 0, 55, 0.08)',
+            borderColor: '#650028',
           },
         },
         text: {
           '&:hover': {
-            backgroundColor: 'rgba(37, 99, 235, 0.08)',
+            backgroundColor: 'rgba(139, 0, 55, 0.08)',
           },
         },
         sizeLarge: {
@@ -435,7 +435,7 @@ const theme = createTheme({
           minHeight: 48,
           borderRadius: 10,
           '&:hover': {
-            backgroundColor: 'rgba(37, 99, 235, 0.08)',
+            backgroundColor: 'rgba(139, 0, 55, 0.08)',
             transform: 'scale(1.05)',
           },
           transition: 'all 0.2s ease-in-out',
@@ -467,11 +467,11 @@ const theme = createTheme({
               borderWidth: 2,
             },
             '&:hover fieldset': {
-              borderColor: '#2563EB',
+              borderColor: '#8B0037',
             },
             '&.Mui-focused fieldset': {
               borderWidth: 2,
-              borderColor: '#2563EB',
+              borderColor: '#8B0037',
             },
           },
           '& .MuiInputBase-input': {
@@ -481,12 +481,28 @@ const theme = createTheme({
           },
           '& .MuiInputLabel-root': {
             fontSize: '1rem',
-            color: '#424242',
-            letterSpacing: '0.5px',
-            '&.Mui-focused': {
-              color: '#2563EB',
+              color: '#424242',
               fontWeight: 500,
+              letterSpacing: '0.5px',
+              '&.Mui-focused': {
+              color: '#8B0037',
+              fontWeight: 600,
             },
+          },
+        },
+      },
+    },
+    MuiTypography: {
+      styleOverrides: {
+        root: {
+          '&.MuiTypography-body2': {
+            fontWeight: 500,
+          },
+          '&.MuiTypography-caption': {
+            fontWeight: 500,
+          },
+          '&.MuiTypography-overline': {
+            fontWeight: 600,
           },
         },
       },
@@ -503,7 +519,7 @@ const theme = createTheme({
           border: '2px solid #E5EAF5',
           transition: 'all 0.2s ease-in-out',
           '&:hover': {
-            boxShadow: '0px 10px 18px rgba(37, 99, 235, 0.16), 0px 3px 8px rgba(20, 184, 166, 0.14)',
+            boxShadow: '0px 10px 18px rgba(139, 0, 55, 0.16), 0px 3px 8px rgba(188, 150, 51, 0.14)',
             transform: 'translateY(-3px)',
           },
         },
@@ -530,20 +546,20 @@ const theme = createTheme({
           border: '2px solid transparent',
         },
         filled: {
-          backgroundColor: '#E8F0FF',
-          color: '#1E3A8A',
+          backgroundColor: '#F7EAF0',
+          color: '#5A0024',
           fontWeight: 600,
           '&:hover': {
-            backgroundColor: '#D7E6FF',
+            backgroundColor: '#EFDDE5',
           },
         },
         colorPrimary: {
-          backgroundColor: '#2563EB',
+          backgroundColor: '#8B0037',
           color: '#FFFFFF',
         },
         colorSecondary: {
-          backgroundColor: '#14B8A6',
-          color: '#FFFFFF',
+          backgroundColor: '#BC9633',
+          color: '#1A1A1A',
         },
       },
     },
@@ -602,9 +618,9 @@ const theme = createTheme({
           border: '2px solid #FFB74D',
         },
         standardInfo: {
-          backgroundColor: '#E8F0FF',
-          color: '#1E3A8A',
-          border: '2px solid #93C5FD',
+          backgroundColor: '#F7EAF0',
+          color: '#5A0024',
+          border: '2px solid #D8AFC0',
         },
         standardSuccess: {
           backgroundColor: '#E8F5E9',
@@ -623,11 +639,11 @@ const theme = createTheme({
             padding: 0,
             margin: 4,
             transitionDuration: '300ms',
-            '&.Mui-checked': {
-              transform: 'translateX(20px)',
-              color: '#fff',
-              '& + .MuiSwitch-track': {
-                backgroundColor: '#9C27B0',
+              '&.Mui-checked': {
+                transform: 'translateX(20px)',
+                color: '#fff',
+                '& + .MuiSwitch-track': {
+                backgroundColor: '#8B0037',
                 opacity: 1,
                 border: 0,
               },
@@ -656,7 +672,7 @@ const theme = createTheme({
           color: '#1A1A1A',
         },
         colorPrimary: {
-          backgroundColor: '#2563EB',
+          backgroundColor: '#8B0037',
           color: '#FFFFFF',
         },
       },
@@ -668,14 +684,14 @@ const theme = createTheme({
           minHeight: 48,  // Accessible touch target
           padding: '12px 16px',
           '&:hover': {
-            backgroundColor: 'rgba(23, 105, 255, 0.08)',
+            backgroundColor: 'rgba(139, 0, 55, 0.08)',
           },
           '&.Mui-selected': {
-            backgroundColor: '#E8F0FF',
-            color: '#1E3A8A',
+            backgroundColor: '#F7EAF0',
+            color: '#5A0024',
             fontWeight: 600,
             '&:hover': {
-              backgroundColor: '#D7E6FF',
+              backgroundColor: '#EFDDE5',
             },
           },
         },
@@ -710,10 +726,11 @@ const theme = createTheme({
       styleOverrides: {
         primary: {
           fontSize: '1rem',  // 16px
-          fontWeight: 500,
+          fontWeight: 600,
         },
         secondary: {
           fontSize: '0.875rem',  // 14px
+          fontWeight: 500,
           lineHeight: 1.43,
         },
       },

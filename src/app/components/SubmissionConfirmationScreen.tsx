@@ -39,10 +39,10 @@ export default function SubmissionConfirmationScreen() {
               </Typography>
               <Typography variant="body2" color="text.secondary">
                 {mode === 'saved'
-                  ? 'Your claim draft is saved and ready for final submission.'
+                  ? 'Your draft is saved. You can return any time to review and submit.'
                   : role === 'field-agent'
-                    ? 'Your field assessment has been submitted to the linked insurer claim.'
-                    : 'Your claim has been submitted and routed for insurer processing.'}
+                    ? 'Your field assessment has been linked to the assigned claim.'
+                    : 'Your claim was submitted successfully and is now under insurer review.'}
               </Typography>
             </CardContent>
           </Card>
@@ -71,18 +71,18 @@ export default function SubmissionConfirmationScreen() {
               </Typography>
               <Typography variant="body2" color="text.secondary">
                 {role === 'field-agent'
-                  ? 'Back-office claim handler will review this assessment in ERP and continue the lifecycle.'
-                  : 'Agent assignment, estimate review, approval decision, settlement calculation, and payment tracking all continue from this claim record.'}
+                  ? 'The back-office claim handler will review your assessment and continue claim processing.'
+                  : 'You will see progress updates here, including information requests, approval decisions, and payment status.'}
               </Typography>
             </CardContent>
           </Card>
 
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.3 }}>
             <Button variant="contained" startIcon={<Home size={18} />} onClick={() => navigate('/dashboard')}>
-              Back to Dashboard
+              Go to Dashboard
             </Button>
             <Button variant="outlined" startIcon={<ListChecks size={18} />} onClick={() => navigate('/reports-history')}>
-              Open Claims Workspace
+              Track This Claim
             </Button>
           </Box>
         </Box>

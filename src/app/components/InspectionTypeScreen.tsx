@@ -134,7 +134,7 @@ export default function InspectionTypeScreen() {
           <ArrowLeft size={24} />
         </IconButton>
         <Typography variant="h6" component="h1" sx={{ fontWeight: 600 }}>
-          {role === 'field-agent' ? 'Assessment Intake' : 'New Claim Intake'}
+          {role === 'field-agent' ? 'Assessment Intake' : 'Start a New Claim'}
         </Typography>
       </Box>
 
@@ -151,7 +151,7 @@ export default function InspectionTypeScreen() {
         )}
 
         <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1 }}>
-          Insurance Line
+          Coverage Type
         </Typography>
         <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mb: 2.5 }}>
           {CLAIM_LINES.map((line) => (
@@ -168,7 +168,7 @@ export default function InspectionTypeScreen() {
         <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
           {role === 'field-agent'
             ? 'Select the assessment category and attach findings to the assigned claim.'
-            : 'Select claim type to start FNOL and route the case to the correct insurer workflow.'}
+            : 'Choose the incident type so your claim is routed to the correct review team.'}
         </Typography>
 
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>

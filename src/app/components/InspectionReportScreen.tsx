@@ -103,6 +103,9 @@ export default function InspectionReportScreen() {
       advance('INVESTIGATION_IN_PROGRESS', 'AGENT_ASSESSMENT_STARTED');
       advance('ESTIMATE_PENDING', 'ASSESSMENT_PENDING');
       advance('ESTIMATE_SUBMITTED', 'AGENT_ASSESSMENT_SUBMITTED', { submittedBy: userId, mode: assessmentMode });
+    } else if (assessmentMode === 'policyholder-context' || claim?.state === 'INFO_REQUESTED') {
+      advance('INFO_RECEIVED', 'POLICYHOLDER_INFO_RECEIVED', { submittedBy: userId });
+      advance('INVESTIGATION_IN_PROGRESS', 'FOLLOWUP_REVIEW_STARTED');
     } else {
       advance('INVESTIGATION_IN_PROGRESS', 'INVESTIGATION_STARTED');
       advance('ESTIMATE_PENDING', 'ESTIMATE_PENDING');
@@ -214,7 +217,11 @@ export default function InspectionReportScreen() {
 
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
           <Button variant="contained" size="large" onClick={handleSubmitClaim} startIcon={<Send size={18} />} sx={{ py: 1.4 }}>
-            {role === 'field-agent' ? `Submit Assessment (${selected.size})` : `Submit Claim (${selected.size})`}
+            {role === 'field-agent'
+              ? `Submit Assessment (${selected.size})`
+              : assessmentMode === 'policyholder-context'
+                ? `Submit Requested Info (${selected.size})`
+                : `Submit Claim (${selected.size})`}
           </Button>
           <Button variant="outlined" size="large" onClick={handleSaveOnly} sx={{ py: 1.3 }}>
             Save as Draft

@@ -42,7 +42,7 @@ export default function LoginScreen() {
         sx={{
           minHeight: '100vh',
           background:
-            'radial-gradient(circle at 10% 10%, rgba(156,39,176,0.12), transparent 35%), radial-gradient(circle at 90% 20%, rgba(33,150,243,0.12), transparent 35%), #F7F9FC',
+            'radial-gradient(circle at 10% 10%, rgba(139,0,55,0.12), transparent 35%), radial-gradient(circle at 90% 20%, rgba(188,150,51,0.12), transparent 35%), #F7F9FC',
           display: 'flex',
           alignItems: 'center',
           py: 4,
@@ -55,19 +55,19 @@ export default function LoginScreen() {
                 width: 72,
                 height: 72,
                 borderRadius: 3,
-                bgcolor: '#0B5CAD',
+                bgcolor: '#8B0037',
                 mx: 'auto',
                 mb: 2,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                boxShadow: '0 12px 30px rgba(11,92,173,0.22)',
+                boxShadow: '0 12px 30px rgba(139,0,55,0.22)',
               }}
             >
               <ShieldCheck size={34} color="#fff" />
             </Box>
             <Typography variant="h4" sx={{ fontWeight: 700, mb: 1 }}>
-              ClaimFlow Pakistan
+              PQGTL Insurace
             </Typography>
             <Typography variant="body2" color="text.secondary">
               Sign in to the {personaLabel} experience.

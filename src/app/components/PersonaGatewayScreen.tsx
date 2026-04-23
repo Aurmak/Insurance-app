@@ -9,7 +9,7 @@ const PERSONAS = [
     subtitle: 'Report a claim and track progress',
     description: 'Create accident claims, upload evidence, respond to insurer requests, and follow approval/payment status.',
     icon: UserRound,
-    color: '#0B5CAD',
+    color: '#8B0037',
   },
   {
     id: 'field-agent',
@@ -17,7 +17,7 @@ const PERSONAS = [
     subtitle: 'Assess assigned claims on site',
     description: 'Capture photos, verify damage details, and submit field assessments linked to existing insurer claims.',
     icon: CarFront,
-    color: '#0369A1',
+    color: '#BC9633',
   },
 ];
 
@@ -35,13 +35,13 @@ export default function PersonaGatewayScreen() {
         sx={{
           minHeight: '100vh',
           background:
-            'radial-gradient(circle at 10% 10%, rgba(11,92,173,0.12), transparent 35%), radial-gradient(circle at 90% 20%, rgba(3,105,161,0.12), transparent 35%), #F7F9FC',
+            'radial-gradient(circle at 10% 10%, rgba(139,0,55,0.12), transparent 35%), radial-gradient(circle at 90% 20%, rgba(188,150,51,0.12), transparent 35%), #F7F9FC',
           py: 5,
         }}
       >
         <Container maxWidth="sm">
           <Typography variant="overline" sx={{ color: 'text.secondary', letterSpacing: 1 }}>
-            ClaimFlow Pakistan
+            PQGTL Insurace
           </Typography>
           <Typography variant="h4" sx={{ fontWeight: 700, mb: 1 }}>
             Select Your App Experience
